@@ -15,9 +15,10 @@ type Props = {
   goals: GoalsProps
   onPress: (id: string) => void
   onAdd: () => void
+  onDelete: (id: string) => void
 }
 
-export function Goals({ goals, onAdd, onPress }: Props) {
+export function Goals({ goals, onAdd, onPress, onDelete }: Props) {
   return (
     <ScrollView
       horizontal
@@ -38,6 +39,7 @@ export function Goals({ goals, onAdd, onPress }: Props) {
           key={id}
           goal={{ name, current, total }}
           onPress={() => onPress(id)}
+          onDelete={() => onDelete(id)}
         />
       ))}
     </ScrollView>

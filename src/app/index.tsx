@@ -5,6 +5,8 @@ import Bottom from "@gorhom/bottom-sheet"
 import { router } from "expo-router"
 import dayjs from "dayjs"
 
+
+
 // COMPONENTS
 import { Input } from "@/components/Input"
 import { Header } from "@/components/Header"
@@ -13,8 +15,13 @@ import { BottomSheet } from "@/components/BottomSheet"
 import { Goals, GoalsProps } from "@/components/Goals"
 import { Transactions, TransactionsProps } from "@/components/Transactions"
 
+//DATABASE
+import { useGoalRepository } from "@/database/useGoalRepository"
+import { useTransactionRepository } from "@/database/useTransictionRepository"
+
 // UTILS
 import { mocks } from "@/utils/mocks"
+
 
 export default function Home() {
   // LISTS
@@ -25,10 +32,16 @@ export default function Home() {
   const [name, setName] = useState("")
   const [total, setTotal] = useState("")
 
+  //DATABASE
+  const useGoal = useGoalRepository()
+  const useTransaction = useTransactionRepository()
+
   // BOTTOM SHEET
   const bottomSheetRef = useRef<Bottom>(null)
   const handleBottomSheetOpen = () => bottomSheetRef.current?.expand()
   const handleBottomSheetClose = () => bottomSheetRef.current?.snapToIndex(0)
+
+
 
   function handleDetails(id: string) {
     router.navigate("/details/" + id)
@@ -42,7 +55,7 @@ export default function Home() {
         return Alert.alert("Erro", "Valor inválido.")
       }
 
-      console.log({ name, total: totalAsNumber })
+      useGoal.create({ name, total: totalAsNumber })
 
       Keyboard.dismiss()
       handleBottomSheetClose()
@@ -50,6 +63,7 @@ export default function Home() {
 
       setName("")
       setTotal("")
+      fetchGoals()
     } catch (error) {
       Alert.alert("Erro", "Não foi possível cadastrar.")
       console.log(error)
@@ -58,7 +72,7 @@ export default function Home() {
 
   async function fetchGoals() {
     try {
-      const response = mocks.goals
+      const response = await useGoal.all()
       setGoals(response)
     } catch (error) {
       console.log(error)
@@ -67,7 +81,7 @@ export default function Home() {
 
   async function fetchTransactions() {
     try {
-      const response = mocks.transactions
+      const response = useTransaction.findLatest()
 
       setTransactions(
         response.map((item) => ({
@@ -80,6 +94,31 @@ export default function Home() {
     }
   }
 
+  async function handleDelete(id: string) {
+    try {
+      Alert.alert(
+        "Confirmar exclusão",
+        "Tem certeza que deseja excluir esta meta?",
+        [
+            {
+                text: "Cancelar",
+                style: "cancel"
+            },
+            {
+                text: "Confirmar",
+                onPress: async () => {
+                    useGoal.remove(Number(id));
+                    fetchGoals(); 
+                    Alert.alert("Sucesso", "Meta excluída!");
+                }
+            }
+        ]
+    );
+    } catch (error) {
+        Alert.alert("Erro", "Não foi possível excluir a meta.");
+        console.log(error);
+    }
+}
   useEffect(() => {
     fetchGoals()
     fetchTransactions()
@@ -96,6 +135,7 @@ export default function Home() {
         goals={goals}
         onAdd={handleBottomSheetOpen}
         onPress={handleDetails}
+        onDelete={handleDelete}
       />
 
       <Transactions transactions={transactions} />
